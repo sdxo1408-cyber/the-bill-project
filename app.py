@@ -201,8 +201,10 @@ def print_and_save():
         
         # ── Customer Info ──
         p.textln(f"Customer : {customer_name}")
+        p.ln(1)
         p.textln(f"Phone    : {customer_phone}")
         if customer_address:
+            p.ln(1)
             addr_lines = wrap_address(customer_address)
             p.textln(f"Address  : {addr_lines[0]}")
             for line in addr_lines[1:]:
