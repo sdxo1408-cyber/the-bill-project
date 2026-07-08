@@ -24,9 +24,17 @@
             <span class="brand-text">DELHI DARBAR</span>
             <span class="badge">POS SYSTEM</span>
         </div>
-        <div class="system-status" id="notion-badge">
-            <span class="status-indicator yellow"></span>
-            <span class="status-label">Checking Notion...</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="btn btn-secondary" id="manage-customers-btn" style="padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.03); cursor: pointer; transition: all 0.2s; color: var(--text-primary);">
+                <i class="fa-solid fa-users"></i> Manage Customers
+            </button>
+            <button class="btn btn-secondary" id="manage-products-btn" style="padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.03); cursor: pointer; transition: all 0.2s; color: var(--text-primary);">
+                <i class="fa-solid fa-cube"></i> Manage Products
+            </button>
+            <div class="system-status" id="notion-badge">
+                <span class="status-indicator yellow"></span>
+                <span class="status-label">Checking Notion...</span>
+            </div>
         </div>
     </header>
 
@@ -83,19 +91,21 @@
                     <h2><i class="fa-solid fa-user-tag"></i> Customer Profile</h2>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="customer-phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
                     <div class="input-with-action">
                         <input type="tel" id="customer-phone" placeholder="Enter 10-digit phone number" maxlength="15" autocomplete="off">
                         <span class="input-loading-spinner" id="search-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
                     </div>
+                    <div id="customer-phone-suggestions" class="suggestions-dropdown" style="display: none;"></div>
                     <span class="form-help" id="search-status-text">Existing profile will auto-load on phone input.</span>
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label for="customer-name"><i class="fa-solid fa-signature"></i> Full Name</label>
-                        <input type="text" id="customer-name" placeholder="Enter customer's name">
+                        <input type="text" id="customer-name" placeholder="Enter customer's name" autocomplete="off">
+                        <div id="customer-name-suggestions" class="suggestions-dropdown" style="display: none;"></div>
                     </div>
                 </div>
 
@@ -155,7 +165,175 @@
         </div>
     </div>
 
+    <!-- Product Catalog Management Modal -->
+    <div class="modal-backdrop" id="product-management-modal">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+            <div class="modal-header">
+                <i class="fa-solid fa-boxes-stacked modal-icon" style="color: var(--primary);"></i>
+                <h3>Manage Product Catalog</h3>
+                <button class="btn-close-modal" id="close-catalog-btn" style="margin-left: auto; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                <div class="catalog-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
+                    <div class="menu-search-wrapper" style="max-width: 300px; margin: 0; width: 100%;">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="catalog-search" placeholder="Search catalog..." autocomplete="off">
+                    </div>
+                    <button class="btn btn-primary" id="add-product-btn" style="padding: 10px 18px; font-size: 13.5px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-plus"></i> Add New Product
+                    </button>
+                </div>
+                
+                <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; background: #ffffff;">
+                    <table class="cart-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(15, 23, 42, 0.02); border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">ID</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Name</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Unit</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Price (Rs.)</th>
+                                <th style="text-align: right; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-table-body">
+                            <!-- Dynamic Catalog Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Product Modal Form -->
+    <div class="modal-backdrop" id="product-form-modal" style="z-index: 1050;">
+        <div class="modal" style="max-width: 450px; width: 90%;">
+            <div class="modal-header">
+                <i class="fa-solid fa-cube modal-icon" style="color: var(--primary);"></i>
+                <h3 id="product-form-title">Add Product</h3>
+                <button class="btn-close-modal" id="close-product-form-btn" style="margin-left: auto; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="product-form">
+                <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group" id="form-group-id">
+                        <label for="prod-id"><i class="fa-solid fa-fingerprint"></i> Product ID / Slug</label>
+                        <input type="text" id="prod-id" placeholder="e.g. chilli_paneer (lowercase and underscore only)" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-name"><i class="fa-solid fa-tag"></i> Product Name</label>
+                        <input type="text" id="prod-name" placeholder="e.g. Chilli Paneer" required>
+                    </div>
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="prod-unit"><i class="fa-solid fa-weight-scale"></i> Unit</label>
+                            <select id="prod-unit" style="width: 100%; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-body); outline: none; background: #ffffff;" required>
+                                <option value="kg">kg (Kilogram)</option>
+                                <option value="pc">pc (Piece)</option>
+                                <option value="plate">plate</option>
+                                <option value="half">half</option>
+                                <option value="full">full</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-price"><i class="fa-solid fa-indian-rupee-sign"></i> Price (Rs.)</label>
+                            <input type="number" id="prod-price" min="0" step="1" placeholder="e.g. 340" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 16px 20px;">
+                    <button type="button" class="btn btn-secondary" id="cancel-product-form-btn" style="margin-right: 8px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-product-btn">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Customer Management Modal -->
+    <div class="modal-backdrop" id="customer-management-modal">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+            <div class="modal-header">
+                <i class="fa-solid fa-users modal-icon" style="color: var(--primary);"></i>
+                <h3>Manage Customers</h3>
+                <button class="btn-close-modal" id="close-customer-catalog-btn" style="margin-left: auto; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                <div class="catalog-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
+                    <div class="menu-search-wrapper" style="max-width: 300px; margin: 0; width: 100%;">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="customer-catalog-search" placeholder="Search customers..." autocomplete="off">
+                    </div>
+                    <button class="btn btn-primary" id="add-customer-btn" style="padding: 10px 18px; font-size: 13.5px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-plus"></i> Add New Customer
+                    </button>
+                </div>
+                
+                <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; background: #ffffff;">
+                    <table class="cart-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(15, 23, 42, 0.02); border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">ID</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Name</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Phone</th>
+                                <th style="text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Address</th>
+                                <th style="text-align: right; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-catalog-table-body">
+                            <!-- Dynamic Customer Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Customer Modal Form -->
+    <div class="modal-backdrop" id="customer-form-modal" style="z-index: 1050;">
+        <div class="modal" style="max-width: 450px; width: 90%;">
+            <div class="modal-header">
+                <i class="fa-solid fa-user modal-icon" style="color: var(--primary);"></i>
+                <h3 id="customer-form-title">Add Customer</h3>
+                <button class="btn-close-modal" id="close-customer-form-btn" style="margin-left: auto; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="customer-form">
+                <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label for="cust-phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                        <input type="tel" id="cust-phone" placeholder="e.g. 9876543210" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-name"><i class="fa-solid fa-signature"></i> Full Name</label>
+                        <input type="text" id="cust-name" placeholder="e.g. John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-address"><i class="fa-solid fa-location-dot"></i> Delivery Address</label>
+                        <textarea id="cust-address" placeholder="Enter customer's physical address" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 16px 20px;">
+                    <button type="button" class="btn btn-secondary" id="cancel-customer-form-btn" style="margin-right: 8px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-customer-btn">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generic Confirmation Modal (replaces native window.confirm) -->
+    <div class="modal-backdrop" id="confirm-modal" style="z-index: 1100;">
+        <div class="modal" style="max-width: 400px; width: 90%;">
+            <div class="modal-header">
+                <i class="fa-solid fa-triangle-exclamation modal-icon" style="color: var(--danger);"></i>
+                <h3 id="confirm-modal-title">Confirm Action</h3>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p id="confirm-modal-message" style="color: var(--text-secondary); font-size: 14px; margin: 0;"></p>
+            </div>
+            <div class="modal-footer" style="padding: 16px 20px;">
+                <button type="button" class="btn btn-secondary" id="confirm-modal-cancel-btn" style="margin-right: 8px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-modal-ok-btn" style="background: var(--danger); border-color: var(--danger);">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JS App logic -->
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v={{ version }}"></script>
 </body>
 </html>

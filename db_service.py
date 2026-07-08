@@ -198,3 +198,108 @@ def save_order(bill_no, customer_phone, items_list, total_amount):
         conn.close()
         
     return success
+
+def add_product(product_id, name, unit, price):
+    """Add a new product to the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO products (id, name, unit, price) VALUES (?, ?, ?, ?)",
+            (product_id, name, unit, price)
+        )
+        conn.commit()
+        success = True
+    except sqlite3.IntegrityError:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+def update_product(product_id, name, unit, price):
+    """Update an existing product's details in the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE products SET name = ?, unit = ?, price = ? WHERE id = ?",
+            (name, unit, price, product_id)
+        )
+        conn.commit()
+        success = cursor.rowcount > 0
+    except sqlite3.Error:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+def delete_product(product_id):
+    """Delete a product from the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        conn.commit()
+        success = cursor.rowcount > 0
+    except sqlite3.Error:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+def get_users():
+    """Fetch all users from database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users ORDER BY name ASC")
+    rows = cursor.fetchall()
+    users = [dict(row) for row in rows]
+    conn.close()
+    return users
+
+def update_user(user_id, name, phone, address):
+    """Update an existing user's details."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?",
+            (name, phone, address, user_id)
+        )
+        conn.commit()
+        success = cursor.rowcount > 0
+    except sqlite3.IntegrityError:
+        success = False  # Phone number already exists
+    except sqlite3.Error:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+def delete_user(user_id):
+    """Delete a user from the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        success = cursor.rowcount > 0
+    except sqlite3.Error:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+def search_users(query):
+    """Search users by name or phone containing query."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE name LIKE ? OR phone LIKE ? LIMIT 10",
+        (f"%{query}%", f"%{query}%")
+    )
+    rows = cursor.fetchall()
+    users = [dict(row) for row in rows]
+    conn.close()
+    return users
+

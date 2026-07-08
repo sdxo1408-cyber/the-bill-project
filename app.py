@@ -60,7 +60,8 @@ def wrap_address(address, w=22):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    import time
+    return render_template("index.html", version=int(time.time()))
 
 @app.route("/api/config-status", methods=["GET"])
 def get_config_status():
@@ -78,6 +79,57 @@ def get_inventory():
     except Exception as e:
         print(f"[!] Error fetching inventory from SQLite: {e}")
         return jsonify(DEFAULT_INVENTORY)
+
+@app.route("/api/products", methods=["POST"])
+def add_product_api():
+    data = request.get_json() or {}
+    product_id = data.get("id", "").strip()
+    name = data.get("name", "").strip()
+    unit = data.get("unit", "").strip()
+    price = data.get("price")
+    
+    if not product_id or not name or not unit or price is None:
+        return jsonify({"success": False, "error": "All fields (ID, Name, Unit, Price) are required."}), 400
+        
+    try:
+        price = float(price)
+    except ValueError:
+        return jsonify({"success": False, "error": "Price must be a valid number."}), 400
+        
+    success = db_service.add_product(product_id, name, unit, price)
+    if success:
+        return jsonify({"success": True, "message": f"Product '{name}' added successfully."})
+    else:
+        return jsonify({"success": False, "error": "Product ID already exists or database error occurred."}), 400
+
+@app.route("/api/products/<product_id>", methods=["PUT"])
+def update_product_api(product_id):
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    unit = data.get("unit", "").strip()
+    price = data.get("price")
+    
+    if not name or not unit or price is None:
+        return jsonify({"success": False, "error": "Name, Unit, and Price are required."}), 400
+        
+    try:
+        price = float(price)
+    except ValueError:
+        return jsonify({"success": False, "error": "Price must be a valid number."}), 400
+        
+    success = db_service.update_product(product_id, name, unit, price)
+    if success:
+        return jsonify({"success": True, "message": f"Product updated successfully."})
+    else:
+        return jsonify({"success": False, "error": "Product not found or database error occurred."}), 404
+
+@app.route("/api/products/<product_id>", methods=["DELETE"])
+def delete_product_api(product_id):
+    success = db_service.delete_product(product_id)
+    if success:
+        return jsonify({"success": True, "message": f"Product deleted successfully."})
+    else:
+        return jsonify({"success": False, "error": "Product not found or database error occurred."}), 404
 
 @app.route("/api/customer-search", methods=["GET"])
 def search_customer():
@@ -108,6 +160,110 @@ def search_customer():
             })
         
     return jsonify({"found": False})
+
+@app.route("/api/customers", methods=["GET"])
+def get_customers_api():
+    try:
+        users = db_service.get_users()
+        return jsonify(users)
+    except Exception as e:
+        print(f"[!] Error fetching customers from SQLite: {e}")
+        return jsonify([]), 500
+
+@app.route("/api/customers", methods=["POST"])
+def add_customer_api():
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    address = data.get("address", "").strip()
+    
+    if not name or not phone:
+        return jsonify({"success": False, "error": "Name and Phone are required."}), 400
+        
+    try:
+        existing = db_service.find_user_by_phone(phone)
+        if existing:
+            return jsonify({"success": False, "error": f"Customer with phone {phone} already exists."}), 400
+            
+        user_id = db_service.create_or_update_user(name, phone, address)
+        
+        # Sync to Notion if configured
+        notion_synced = False
+        if config.is_notion_configured():
+            try:
+                notion_service.create_or_update_customer(name, phone, address)
+                notion_synced = True
+            except Exception as e:
+                print(f"[!] Notion sync error: {e}")
+                
+        return jsonify({
+            "success": True, 
+            "message": f"Customer '{name}' added successfully.",
+            "user_id": user_id,
+            "notion_synced": notion_synced
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/customers/<int:user_id>", methods=["PUT"])
+def update_customer_api(user_id):
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    address = data.get("address", "").strip()
+    
+    if not name or not phone:
+        return jsonify({"success": False, "error": "Name and Phone are required."}), 400
+        
+    try:
+        existing = db_service.find_user_by_phone(phone)
+        if existing and existing["id"] != user_id:
+            return jsonify({"success": False, "error": f"Another customer already has phone {phone}."}), 400
+            
+        success = db_service.update_user(user_id, name, phone, address)
+        if not success:
+            return jsonify({"success": False, "error": "Customer not found or update failed."}), 404
+            
+        # Sync to Notion if configured
+        notion_synced = False
+        if config.is_notion_configured():
+            try:
+                notion_service.create_or_update_customer(name, phone, address)
+                notion_synced = True
+            except Exception as e:
+                print(f"[!] Notion sync error: {e}")
+                
+        return jsonify({
+            "success": True,
+            "message": "Customer updated successfully.",
+            "notion_synced": notion_synced
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/customers/<int:user_id>", methods=["DELETE"])
+def delete_customer_api(user_id):
+    try:
+        success = db_service.delete_user(user_id)
+        if success:
+            return jsonify({"success": True, "message": "Customer deleted successfully."})
+        else:
+            return jsonify({"success": False, "error": "Customer not found or delete failed."}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/customers/search", methods=["GET"])
+def search_customers_api():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify([])
+    try:
+        users = db_service.search_users(query)
+        return jsonify(users)
+    except Exception as e:
+        print(f"[!] Error searching customers in SQLite: {e}")
+        return jsonify([]), 500
+
 
 @app.route("/api/print-and-save", methods=["POST"])
 def print_and_save():
