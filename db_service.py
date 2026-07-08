@@ -108,7 +108,15 @@ def init_db():
 
             # Rice / Biryani
             ("chicken_biryani", "Chicken Biryani", "pc", 260.0),
-            ("chicken_tikka_rice", "Chicken Tikka Rice", "pc", 320.0)
+            ("chicken_tikka_rice", "Chicken Tikka Rice", "pc", 320.0),
+
+            # Breads
+            ("naan", "Naan", "pc", 50.0),
+            ("butter_naan", "Butter Naan", "pc", 50.0),
+            ("tawa_roti", "Tawa Roti", "pc", 15.0),
+
+            # Beverages
+            ("mineral_water", "Mineral Water", "pc", 20.0)
         ]
         cursor.executemany(
             "INSERT INTO products (id, name, unit, price) VALUES (?, ?, ?, ?)",
