@@ -57,12 +57,58 @@ def init_db():
     if cursor.fetchone()["count"] == 0:
         print("[*] Seeding default product inventory catalog...")
         default_products = [
-            ("leg_chest", "Leg & Chest", "kg", 320.0),
-            ("ch_boneless", "Ch. Boneless", "kg", 285.0),
-            ("chicken_tikka", "Chicken Tikka", "kg", 350.0),
-            ("chicken_drumsticks", "Chicken Drumsticks", "kg", 340.0),
-            ("chicken_wings", "Chicken Wings", "kg", 220.0),
-            ("whole_chicken", "Whole Chicken", "pc", 250.0)
+            # Veg Starters
+            ("haryali_kebab", "Haryali Kebab", "pc", 230.0),
+            ("dahi_kebab", "Dahi Kebab", "pc", 260.0),
+            ("spring_roll", "Spring Roll", "pc", 230.0),
+            ("cheese_cigar", "Cheese Cigar", "pc", 300.0),
+            ("crispy_corn", "Crispy Corn", "pc", 260.0),
+            ("chilli_paneer", "Chilli Paneer", "pc", 340.0),
+            ("peanut_masala", "Peanut Masala", "pc", 220.0),
+            ("chilli_potato", "Chilli Potato", "pc", 300.0),
+            ("paneer_tikka", "Paneer Tikka", "pc", 380.0),
+
+            # Non-Veg Starters
+            ("tandoori_chicken_half", "Tandoori Chicken (H)", "pc", 270.0),
+            ("tandoori_chicken_full", "Tandoori Chicken (F)", "pc", 500.0),
+            ("tandoori_kalimirch_half", "Tandoori Kalimirch (H)", "pc", 280.0),
+            ("tandoori_kalimirch_full", "Tandoori Kalimirch (F)", "pc", 520.0),
+            ("chicken_tikka", "Chicken Tikka", "pc", 330.0),
+            ("malai_tikka", "Malai Tikka", "pc", 370.0),
+            ("chilli_chicken", "Chilli Chicken", "pc", 380.0),
+            ("chicken_seekh", "Chicken Seekh", "pc", 300.0),
+            ("fish_fry", "Fish Fry", "pc", 300.0),
+            ("fish_finger", "Fish Finger", "pc", 330.0),
+            ("tandoori_fish", "Tandoori Fish", "pc", 380.0),
+
+            # Veg Main Course
+            ("dal_makhani", "Dal Makhani", "pc", 300.0),
+            ("dal_tadka", "Dal Tadka", "pc", 280.0),
+            ("handi_paneer", "Handi Paneer", "pc", 360.0),
+            ("kadai_paneer", "Kadai Paneer", "pc", 360.0),
+            ("paneer_masala", "Paneer Masala", "pc", 360.0),
+            ("matar_paneer", "Matar Paneer", "pc", 300.0),
+            ("mushroom_paneer", "Mushroom Paneer", "pc", 370.0),
+
+            # Non-Veg Main Course
+            ("butter_chicken_half", "Butter Chicken (H)", "pc", 450.0),
+            ("butter_chicken_full", "Butter Chicken (F)", "pc", 750.0),
+            ("kadai_chicken_half", "Kadai Chicken (H)", "pc", 450.0),
+            ("kadai_chicken_full", "Kadai Chicken (F)", "pc", 750.0),
+            ("handi_chicken_half", "Handi Chicken (H)", "pc", 450.0),
+            ("handi_chicken_full", "Handi Chicken (F)", "pc", 750.0),
+            ("chicken_masala_half", "Chicken Masala (H)", "pc", 450.0),
+            ("chicken_masala_full", "Chicken Masala (F)", "pc", 750.0),
+            ("chicken_do_pyaza_half", "Chicken Do Pyaza (H)", "pc", 450.0),
+            ("chicken_do_pyaza_full", "Chicken Do Pyaza (F)", "pc", 750.0),
+            ("chicken_patiyala_half", "Chicken Patiyala (H)", "pc", 450.0),
+            ("chicken_patiyala_full", "Chicken Patiyala (F)", "pc", 750.0),
+            ("fish_curry", "Fish Curry", "pc", 450.0),
+            ("egg_curry", "Egg Curry", "pc", 320.0),
+
+            # Rice / Biryani
+            ("chicken_biryani", "Chicken Biryani", "pc", 260.0),
+            ("chicken_tikka_rice", "Chicken Tikka Rice", "pc", 320.0)
         ]
         cursor.executemany(
             "INSERT INTO products (id, name, unit, price) VALUES (?, ?, ?, ?)",
