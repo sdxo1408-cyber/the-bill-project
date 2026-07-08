@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import config
 import notion_service
+import db_service
 from escpos.printer import Serial
 
 app = Flask(__name__)
@@ -17,13 +18,16 @@ DEFAULT_INVENTORY = [
     {"id": "whole_chicken", "name": "Whole Chicken", "unit": "pc", "price": 250}
 ]
 
-# Simple in-memory counter for bill numbers
-bill_counter = 1
-
 def generate_bill_no():
-    global bill_counter
-    b_no = f"#DD-{bill_counter:04d}"
-    bill_counter += 1
+    try:
+        conn = db_service.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM orders")
+        count = cursor.fetchone()["count"]
+        conn.close()
+    except Exception:
+        count = 0
+    b_no = f"#DD-{(count + 1):04d}"
     return b_no
 
 # Helper functions for receipt layout
@@ -68,7 +72,12 @@ def get_config_status():
 
 @app.route("/api/inventory", methods=["GET"])
 def get_inventory():
-    return jsonify(DEFAULT_INVENTORY)
+    try:
+        items = db_service.get_inventory()
+        return jsonify(items)
+    except Exception as e:
+        print(f"[!] Error fetching inventory from SQLite: {e}")
+        return jsonify(DEFAULT_INVENTORY)
 
 @app.route("/api/customer-search", methods=["GET"])
 def search_customer():
@@ -76,16 +85,27 @@ def search_customer():
     if not phone:
         return jsonify({"found": False, "message": "Phone parameter required."}), 400
     
-    if not config.is_notion_configured():
-        return jsonify({"found": False, "local_mode": True})
-        
-    customer = notion_service.find_customer_by_phone(phone)
-    if customer:
-        return jsonify({
-            "found": True,
-            "name": customer["name"],
-            "address": customer["address"]
-        })
+    # 1. Search in local SQL database first
+    try:
+        customer = db_service.find_user_by_phone(phone)
+        if customer:
+            return jsonify({
+                "found": True,
+                "name": customer["name"],
+                "address": customer["address"]
+            })
+    except Exception as e:
+        print(f"[!] Error searching customer in SQLite: {e}")
+
+    # 2. Fallback to Notion if configured
+    if config.is_notion_configured():
+        customer = notion_service.find_customer_by_phone(phone)
+        if customer:
+            return jsonify({
+                "found": True,
+                "name": customer["name"],
+                "address": customer["address"]
+            })
         
     return jsonify({"found": False})
 
@@ -116,15 +136,25 @@ def print_and_save():
         items_summary_list.append(f"{item['name']} ({item['qty']} {item.get('unit', 'kg')})")
     items_summary = ", ".join(items_summary_list)
     
+    # ── LOCAL SQL DATABASE INTEGRATION ──
+    sql_saved = False
+    try:
+        # 1. Create/Update user details
+        db_service.create_or_update_user(customer_name, customer_phone, customer_address)
+        # 2. Save order transaction
+        sql_saved = db_service.save_order(bill_no, customer_phone, items, total_amount)
+    except Exception as e:
+        print(f"[!] Error saving transaction to SQLite: {e}")
+
     # ── NOTION INTEGRATION ──
     notion_saved = False
     notion_error = None
     
     if config.is_notion_configured():
         try:
-            # 1. Create/Update Customer Profile
+            # 1. Create/Update Customer Profile in Notion
             cust_res = notion_service.create_or_update_customer(customer_name, customer_phone, customer_address)
-            # 2. Record Transaction Entry
+            # 2. Record Transaction Entry in Notion
             if cust_res:
                 notion_saved = notion_service.create_order(
                     bill_no=bill_no,
@@ -214,6 +244,7 @@ def print_and_save():
 
     return jsonify({
         "success": print_success,
+        "sql_saved": sql_saved,
         "notion_saved": notion_saved,
         "notion_error": notion_error,
         "print_error": print_error,
@@ -222,5 +253,8 @@ def print_and_save():
     })
 
 if __name__ == "__main__":
+    # Initialize the local SQL database
+    db_service.init_db()
+    
     print(f"[*] Starting local POS server on http://{config.HOST}:{config.PORT}")
     app.run(host=config.HOST, port=config.PORT, debug=True)

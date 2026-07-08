@@ -9,5 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# Local secrets
+# Local secrets & databases
 .env
+*.db
