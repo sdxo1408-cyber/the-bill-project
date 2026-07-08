@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delhi Darbar - Billing POS</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Status Banner -->
+    <header class="top-nav">
+        <div class="brand">
+            <i class="fa-solid fa-drumstick-bite brand-icon"></i>
+            <span class="brand-text">DELHI DARBAR</span>
+            <span class="badge">POS SYSTEM</span>
+        </div>
+        <div class="system-status" id="notion-badge">
+            <span class="status-indicator yellow"></span>
+            <span class="status-label">Checking Notion...</span>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Left Side: Product Selection & Cart -->
+        <section class="left-panel">
+            <div class="card card-menu">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-border-all"></i> Menu Selection</h2>
+                </div>
+                <div class="menu-grid" id="menu-container">
+                    <!-- Dynamic inventory items loaded here -->
+                </div>
+            </div>
+
+            <div class="card card-cart">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-cart-shopping"></i> Bill items</h2>
+                    <button class="btn btn-clear-cart" id="clear-cart-btn"><i class="fa-solid fa-trash-can"></i> Reset</button>
+                </div>
+                <div class="cart-items-table-wrapper">
+                    <table class="cart-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items-body">
+                            <!-- Dynamic Cart Items -->
+                            <tr class="empty-cart-row">
+                                <td colspan="5" class="empty-cart-message">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                    <p>Cart is empty. Click menu items to add.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side: Customer Details & Checkout -->
+        <section class="right-panel">
+            <div class="card card-customer">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-user-tag"></i> Customer Profile</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label for="customer-phone"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                    <div class="input-with-action">
+                        <input type="tel" id="customer-phone" placeholder="Enter 10-digit phone number" maxlength="15" autocomplete="off">
+                        <span class="input-loading-spinner" id="search-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                    </div>
+                    <span class="form-help" id="search-status-text">Existing profile will auto-load on phone input.</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customer-name"><i class="fa-solid fa-signature"></i> Full Name</label>
+                        <input type="text" id="customer-name" placeholder="Enter customer's name">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer-address"><i class="fa-solid fa-location-dot"></i> Delivery Address</label>
+                    <textarea id="customer-address" placeholder="Enter customer's physical address (street, area, etc.)" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Order Total & Submit Card -->
+            <div class="card card-checkout">
+                <div class="checkout-summary">
+                    <div class="summary-row">
+                        <span>Items Count</span>
+                        <span id="summary-items-count">0 items</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row total-row">
+                        <span>Grand Total</span>
+                        <span id="summary-total-amount">Rs. 0</span>
+                    </div>
+                </div>
+
+                <!-- Print & Save Button -->
+                <button class="btn btn-primary btn-checkout" id="checkout-btn" disabled>
+                    <i class="fa-solid fa-print"></i> Save & Print Bill
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Toasts -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <!-- Configuration Modal (Hidden by Default) -->
+    <div class="modal-backdrop" id="notion-warning-modal">
+        <div class="modal">
+            <div class="modal-header warning">
+                <i class="fa-solid fa-triangle-exclamation modal-icon"></i>
+                <h3>Notion Integration Required</h3>
+            </div>
+            <div class="modal-body">
+                <p>The billing POS is currently running in <strong>Local-Only Print Mode</strong>. This means receipts will print, but order details will NOT sync to Notion.</p>
+                <div class="config-instructions">
+                    <h4>How to fix:</h4>
+                    <ol>
+                        <li>Open the file <code>.env</code> in the project directory.</li>
+                        <li>Enter your <strong>Notion Integration Token</strong>.</li>
+                        <li>Enter your <strong>Customers Database ID</strong> & <strong>Orders Database ID</strong>.</li>
+                        <li>Save the file and restart the server.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Proceed in Local Print Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS App logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

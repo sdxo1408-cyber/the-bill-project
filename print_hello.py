@@ -87,7 +87,7 @@ def print_via_serial(com_port):
 
         # ── Print content ──────────────────────────────────────
         p.set(align="center", bold=True, width=2, height=4)
-        p.textln("Hello sd.xo")
+        p.textln("hey sd.xo!")
 
         p.ln(3)   # Feed 3 lines before cut
         p.cut()

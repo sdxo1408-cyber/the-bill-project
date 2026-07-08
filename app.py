@@ -1,0 +1,226 @@
+from flask import Flask, jsonify, request, render_template
+from datetime import datetime
+import os
+import config
+import notion_service
+from escpos.printer import Serial
+
+app = Flask(__name__)
+
+# Default Inventory Items
+DEFAULT_INVENTORY = [
+    {"id": "leg_chest", "name": "Leg & Chest", "unit": "kg", "price": 320},
+    {"id": "ch_boneless", "name": "Ch. Boneless", "unit": "kg", "price": 285},
+    {"id": "chicken_tikka", "name": "Chicken Tikka", "unit": "kg", "price": 350},
+    {"id": "chicken_drumsticks", "name": "Chicken Drumsticks", "unit": "kg", "price": 340},
+    {"id": "chicken_wings", "name": "Chicken Wings", "unit": "kg", "price": 220},
+    {"id": "whole_chicken", "name": "Whole Chicken", "unit": "pc", "price": 250}
+]
+
+# Simple in-memory counter for bill numbers
+bill_counter = 1
+
+def generate_bill_no():
+    global bill_counter
+    b_no = f"#DD-{bill_counter:04d}"
+    bill_counter += 1
+    return b_no
+
+# Helper functions for receipt layout
+def two_col(left, right, w=32):
+    gap = w - len(left) - len(right)
+    if gap < 1:
+        gap = 1
+    return left + " " * gap + right
+
+def item_row(name, qty, price):
+    name_col = f"{name:<13}"[:13]
+    qty_col = f"{qty:<9}"[:9]
+    price_col = f"Rs.{int(price):>6}"[:10]
+    return name_col + qty_col + price_col
+
+def wrap_address(address, w=22):
+    words = address.split()
+    lines = []
+    current = ""
+    for word in words:
+        if len(current) + len(word) + 1 <= w:
+            current = (current + " " + word).strip()
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/api/config-status", methods=["GET"])
+def get_config_status():
+    return jsonify({
+        "notion_connected": config.is_notion_configured(),
+        "printer_port": config.PRINTER_PORT,
+        "printer_baudrate": config.PRINTER_BAUDRATE
+    })
+
+@app.route("/api/inventory", methods=["GET"])
+def get_inventory():
+    return jsonify(DEFAULT_INVENTORY)
+
+@app.route("/api/customer-search", methods=["GET"])
+def search_customer():
+    phone = request.args.get("phone", "").strip()
+    if not phone:
+        return jsonify({"found": False, "message": "Phone parameter required."}), 400
+    
+    if not config.is_notion_configured():
+        return jsonify({"found": False, "local_mode": True})
+        
+    customer = notion_service.find_customer_by_phone(phone)
+    if customer:
+        return jsonify({
+            "found": True,
+            "name": customer["name"],
+            "address": customer["address"]
+        })
+        
+    return jsonify({"found": False})
+
+@app.route("/api/print-and-save", methods=["POST"])
+def print_and_save():
+    data = request.get_json() or {}
+    
+    customer_name = data.get("customer_name", "").strip()
+    customer_phone = data.get("customer_phone", "").strip()
+    customer_address = data.get("customer_address", "").strip()
+    items = data.get("items", [])
+    
+    if not customer_name or not customer_phone:
+        return jsonify({"success": False, "error": "Customer Name and Phone are required."}), 400
+        
+    if not items:
+        return jsonify({"success": False, "error": "Cannot bill an empty cart."}), 400
+        
+    # Generate bill number
+    bill_no = generate_bill_no()
+    
+    # Calculate Total
+    total_amount = sum(float(item["price"]) * float(item["qty"]) for item in items)
+    
+    # Construct Items summary string for Notion
+    items_summary_list = []
+    for item in items:
+        items_summary_list.append(f"{item['name']} ({item['qty']} {item.get('unit', 'kg')})")
+    items_summary = ", ".join(items_summary_list)
+    
+    # ── NOTION INTEGRATION ──
+    notion_saved = False
+    notion_error = None
+    
+    if config.is_notion_configured():
+        try:
+            # 1. Create/Update Customer Profile
+            cust_res = notion_service.create_or_update_customer(customer_name, customer_phone, customer_address)
+            # 2. Record Transaction Entry
+            if cust_res:
+                notion_saved = notion_service.create_order(
+                    bill_no=bill_no,
+                    customer_name=customer_name,
+                    customer_phone=customer_phone,
+                    items_summary=items_summary,
+                    total_amount=total_amount
+                )
+            if not notion_saved:
+                notion_error = "Failed to create order transaction entry in Notion database."
+        except Exception as e:
+            notion_error = str(e)
+    else:
+        notion_error = "Notion is not configured. Running in Local-Only Print Mode."
+
+    # ── PRINTER INTEGRATION ──
+    print_success = False
+    print_error = None
+    try:
+        p = Serial(
+            devfile=config.PRINTER_PORT,
+            baudrate=config.PRINTER_BAUDRATE,
+            bytesize=8,
+            parity="N",
+            stopbits=1,
+            timeout=2,
+            dsrdtr=True,
+            profile="default"
+        )
+        
+        # ── Print Header ──
+        p.set(align="center", bold=True, width=2, height=2)
+        p.textln("DELHI DARBAR")
+        p.set(align="center", bold=False, normal_textsize=True)
+        p.textln("Raw Chicken Shop")
+        p.textln("Ph: 1800-XXX-XXXX")
+        p.textln("=" * 32)
+        
+        # ── Date / Time / Bill No ──
+        now = datetime.now()
+        p.textln(two_col(f"Date: {now.strftime('%d/%m/%Y')}", f"Time: {now.strftime('%I:%M %p')}"))
+        p.textln(two_col(f"Bill: {bill_no}", ""))
+        p.textln("-" * 32)
+        
+        # ── Customer Info ──
+        p.textln(f"Customer : {customer_name}")
+        p.textln(f"Phone    : {customer_phone}")
+        if customer_address:
+            addr_lines = wrap_address(customer_address)
+            p.textln(f"Address  : {addr_lines[0]}")
+            for line in addr_lines[1:]:
+                p.textln(f"           {line}")
+        p.textln("-" * 32)
+        
+        # ── Items Table ──
+        p.set(bold=True)
+        p.textln(f"{'ITEM':<13}{'QTY':<9}{'AMOUNT':>10}")
+        p.set(bold=False)
+        p.textln("-" * 32)
+        
+        for item in items:
+            qty_label = f"{item['qty']} {item.get('unit', 'kg')}"
+            row_price = float(item['price']) * float(item['qty'])
+            p.textln(item_row(item['name'], qty_label, row_price))
+            
+        p.textln("-" * 32)
+        p.set(bold=True)
+        p.textln(two_col("TOTAL AMOUNT", f"Rs. {int(total_amount)}"))
+        p.set(bold=False)
+        p.textln("=" * 32)
+        
+        # ── Footer ──
+        p.ln(1)
+        p.set(align="center")
+        p.textln("Thank you for Ordering")
+        p.set(align="center", bold=True)
+        p.textln("from Delhi Darbar!")
+        p.set(bold=False)
+        p.ln(3)
+        p.cut()
+        p.close()
+        
+        print_success = True
+    except Exception as e:
+        print_error = f"Printer error on {config.PRINTER_PORT}: {str(e)}"
+        print(f"[!] {print_error}")
+
+    return jsonify({
+        "success": print_success,
+        "notion_saved": notion_saved,
+        "notion_error": notion_error,
+        "print_error": print_error,
+        "bill_no": bill_no,
+        "total_amount": total_amount
+    })
+
+if __name__ == "__main__":
+    print(f"[*] Starting local POS server on http://{config.HOST}:{config.PORT}")
+    app.run(host=config.HOST, port=config.PORT, debug=True)
