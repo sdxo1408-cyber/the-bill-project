@@ -1,30 +1,30 @@
 /* Custom CSS System for Delhi Darbar POS */
 
 :root {
-    /* Color Palette */
-    --bg-main: #0b0f19;
-    --bg-card: rgba(22, 28, 45, 0.7);
-    --border-color: rgba(255, 255, 255, 0.08);
+    /* Color Palette - White/Light Theme */
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: rgba(15, 23, 42, 0.08);
     
     --primary: #f24e1e; /* Chicken shop crimson orange */
     --primary-hover: #ff683b;
-    --primary-bg: rgba(242, 78, 30, 0.1);
+    --primary-bg: rgba(242, 78, 30, 0.06);
     
-    --success: #10b981;
-    --success-bg: rgba(16, 185, 129, 0.1);
-    --warning: #f59e0b;
-    --warning-bg: rgba(245, 158, 11, 0.1);
-    --danger: #ef4444;
-    --danger-bg: rgba(239, 68, 68, 0.1);
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.08);
+    --warning: #d97706;
+    --warning-bg: rgba(217, 119, 6, 0.08);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.08);
     
-    --text-primary: #f3f4f6;
-    --text-secondary: #9ca3af;
-    --text-muted: #6b7280;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
     
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Outfit', sans-serif;
     
-    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.05);
     --radius-lg: 16px;
     --radius-md: 10px;
     
@@ -40,8 +40,8 @@
 body {
     background-color: var(--bg-main);
     background-image: 
-        radial-gradient(at 10% 20%, rgba(242, 78, 30, 0.05) 0px, transparent 50%),
-        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
+        radial-gradient(at 10% 20%, rgba(242, 78, 30, 0.02) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.01) 0px, transparent 50%);
     color: var(--text-primary);
     font-family: var(--font-body);
     min-height: 100vh;
@@ -56,7 +56,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 32px;
-    background: rgba(11, 15, 25, 0.8);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
     position: sticky;
@@ -101,7 +101,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(15, 23, 42, 0.03);
     padding: 8px 14px;
     border-radius: 30px;
     border: 1px solid var(--border-color);
@@ -190,7 +190,7 @@ body {
 }
 
 .menu-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(15, 23, 42, 0.02);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 16px;
@@ -258,7 +258,7 @@ body {
 .cart-table td {
     padding: 14px 8px;
     font-size: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.03);
     vertical-align: middle;
 }
 
@@ -282,7 +282,7 @@ body {
 
 .qty-input {
     width: 55px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.03);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     text-align: center;
@@ -293,7 +293,7 @@ body {
 }
 
 .qty-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.03);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     cursor: pointer;
@@ -347,7 +347,7 @@ body {
 .form-group input,
 .form-group textarea {
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(15, 23, 42, 0.02);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     padding: 12px 16px;
@@ -361,7 +361,7 @@ body {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     box-shadow: 0 0 0 3px rgba(242, 78, 30, 0.15);
 }
 
@@ -451,7 +451,7 @@ body {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.04);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     padding: 10px 20px;
@@ -459,7 +459,7 @@ body {
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.08);
 }
 
 .btn-clear-cart {
@@ -495,7 +495,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(11, 15, 25, 0.85);
+    background: rgba(15, 23, 42, 0.4);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -512,12 +512,12 @@ body {
 }
 
 .modal {
-    background: #111827;
+    background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
     overflow: hidden;
     transform: translateY(20px);
     transition: transform var(--transition-speed);
@@ -558,7 +558,7 @@ body {
 }
 
 .config-instructions {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(15, 23, 42, 0.02);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 16px;
@@ -599,11 +599,11 @@ body {
 }
 
 .toast {
-    background: #111827;
+    background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 16px 20px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
     display: flex;
     align-items: center;
     gap: 12px;
