@@ -8,6 +8,7 @@ let state = {
 
 // UI Elements
 const menuContainer = document.getElementById("menu-container");
+const menuSearch = document.getElementById("menu-search");
 const cartItemsBody = document.getElementById("cart-items-body");
 const clearCartBtn = document.getElementById("clear-cart-btn");
 const customerPhone = document.getElementById("customer-phone");
@@ -37,6 +38,11 @@ function setupEventListeners() {
     customerPhone.addEventListener("input", handlePhoneInput);
     customerName.addEventListener("input", validateCheckoutState);
     customerAddress.addEventListener("input", validateCheckoutState);
+    
+    // Menu Search Input
+    menuSearch.addEventListener("input", () => {
+        renderMenu(menuSearch.value);
+    });
 }
 
 // Config & Status Checking
@@ -87,9 +93,25 @@ async function fetchInventory() {
     }
 }
 
-function renderMenu() {
+function renderMenu(filterQuery = "") {
     menuContainer.innerHTML = "";
-    state.inventory.forEach(item => {
+    const query = filterQuery.trim().toLowerCase();
+    
+    const filtered = state.inventory.filter(item => 
+        item.name.toLowerCase().includes(query)
+    );
+    
+    if (filtered.length === 0) {
+        menuContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 48px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-magnifying-glass-minus" style="font-size: 28px; opacity: 0.4;"></i>
+                <p style="font-size: 14px; font-weight: 500;">No items match "${filterQuery}"</p>
+            </div>
+        `;
+        return;
+    }
+    
+    filtered.forEach(item => {
         const div = document.createElement("div");
         div.className = "menu-item";
         div.addEventListener("click", () => addToCart(item));
@@ -319,6 +341,8 @@ async function handleCheckout() {
             customerPhone.value = "";
             customerName.value = "";
             customerAddress.value = "";
+            menuSearch.value = "";
+            renderMenu();
             searchStatusText.textContent = "Existing profile will auto-load on phone input.";
             
         } else {
